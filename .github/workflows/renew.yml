@@ -53,16 +53,18 @@ jobs:
           pip install seleniumbase aiohttp requests
           seleniumbase install chromedriver
 
-
-      - name: 🚀 运行续期脚本
+       - name: 🚀 运行续期脚本
         env:
-          ACCOUNTS: ${{ secrets.JUSTRUNMY_ACCOUNTS }}
+          # 这一行至关重要！它负责把 GitHub 的秘密传给 Python 变量
+          ACCOUNTS: ${{ secrets.ACCOUNTS }} 
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: |
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
             python justrunmy_renew.py
 
+            
+     
             
     
             

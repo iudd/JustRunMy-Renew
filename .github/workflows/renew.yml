@@ -62,11 +62,11 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           # 兼容旧代码变量（可选）
-          JUSTRUNMY_EMAIL: ${{ secrets.JUSTRUNMY_EMAIL }}
-          JUSTRUNMY_PASSWORD: ${{ secrets.JUSTRUNMY_PASSWORD }}
+       #   JUSTRUNMY_EMAIL: ${{ secrets.JUSTRUNMY_EMAIL }}
+       #   JUSTRUNMY_PASSWORD: ${{ secrets.JUSTRUNMY_PASSWORD }}
         run: |
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
-            python justrunmy_renew.py
+            python justrunmy_renewd.py
             
       - name: 📸 上传调试截图
         if: always()

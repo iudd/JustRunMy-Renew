@@ -182,8 +182,8 @@ def handle_turnstile(sb) -> bool:
 
         try: sb.wait_for_element('input[name="Email"]', timeout=15)
         except Exception:
-        sb.save_screenshot("login_load_fail.png")
-        return False
+            sb.save_screenshot("login_load_fail.png")
+            return False
 
     try:
         for btn in sb.find_elements("button"):

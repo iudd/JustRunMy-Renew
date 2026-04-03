@@ -211,37 +211,36 @@ def handle_turnstile(sb) -> bool:
     if sb.get_current_url().split('?')[0].lower() != LOGIN_URL.lower(): return True
     sb.save_screenshot("login_failed.png")
     return False
-    def main():
-        global EMAIL, PASSWORD
+def main():
+    global EMAIL, PASSWORD
     
-        pairs = [p.split("#") for p in ACCOUNTS_STR.split(",") if "#" in p]
-        use_proxy = os.environ.get("USE_PROXY", "false").lower() == "true"
-        sb_kwargs = {"uc": True, "test": True, "headless": False}
+    pairs = [p.split("#") for p in ACCOUNTS_STR.split(",") if "#" in p]
+    use_proxy = os.environ.get("USE_PROXY", "false").lower() == "true"
+    sb_kwargs = {"uc": True, "test": True, "headless": False}
     
-        if use_proxy:
-            sb_kwargs["proxy"] = "http://127.0.0.1:8080"
+    if use_proxy:
+        sb_kwargs["proxy"] = "http://127.0.0.1:8080"
 
-        for email_str, pwd_str in pairs:
-            EMAIL = email_str.strip()
-            PASSWORD = pwd_str.strip()
+    for email_str, pwd_str in pairs:
+        EMAIL = email_str.strip()
+        PASSWORD = pwd_str.strip()
         
-            print(f"\n▶️ 开始处理账号: {EMAIL}")
+        print(f"\n▶️ 开始处理账号: {EMAIL}")
         
-            with SB(**sb_kwargs) as sb:
-                try:
-                    sb.open("https://api.ipify.org/?format=json")
-                    print(f"🌐 IP: {sb.get_text('body')}")
-                except Exception: pass
+        with SB(**sb_kwargs) as sb:
+            try:
+                sb.open("https://api.ipify.org/?format=json")
+                print(f"🌐 IP: {sb.get_text('body')}")
+            except Exception: pass
 
-                if login(sb):
-                    renew(sb)
-                else:
-                    print(f"\n❌ {EMAIL} 登录环节失败。")
-                    send_tg_message("❌", "登录失败", "未知")
+            if login(sb):
+                renew(sb)
+            else:
+                print(f"\n❌ {EMAIL} 登录环节失败。")
+                send_tg_message("❌", "登录失败", "未知")
                 
-            print(f"🏁 冷却 15 秒...")
-            time.sleep(15)
-
+        print(f"🏁 冷却 15 秒...")
+        time.sleep(15)
 if __name__ == "__main__":
     main()
     

@@ -114,38 +114,71 @@ def renew(sb, email):
         send_tg_message("❌", f"续期失败: {str(e)}", "未知", email)
 
         # ============================================================
-# 5. 程序入口
+# ============================================================
+# 5. 程序入口 (多账号循环驱动版)
 # ============================================================
 def main():
+    print("=" * 50)
+    print("   JustRunMy.app 多账号自动续期脚本")
+    print("=" * 50)
+    
+    # 1. 检查环境变量
     if not ACCOUNTS_STR:
         print("❌ 致命错误：未在 GitHub Secrets 中发现 ACCOUNTS 变量")
+        print("💡 请确保 Secret 名字为 ACCOUNTS，格式为: 账号1#密码1,账号2#密码2")
         return
 
-    # 解析格式：邮箱1#密码1,邮箱2#密码2
-    pairs = [p.split("#") for p in ACCOUNTS_STR.split(",") if "#" in p]
-    print(f"🚀 检测到 {len(pairs)} 个账号，开始排队执行...")
+    # 2. 解析账号列表 (支持空格过滤)
+    # 结果格式示例: [('user1@mail.com', 'pass1'), ('user2@mail.com', 'pass2')]
+    try:
+        pairs = [p.split("#") for p in ACCOUNTS_STR.split(",") if "#" in p]
+        if not pairs:
+            print("❌ 账号解析结果为空，请检查 ACCOUNTS 格式是否正确")
+            return
+        print(f"🚀 统计：共有 {len(pairs)} 个账号待处理")
+    except Exception as e:
+        print(f"❌ 账号解析出错: {e}")
+        return
 
+    # 3. 准备浏览器启动参数
     use_proxy = os.environ.get("USE_PROXY", "false").lower() == "true"
     sb_kwargs = {"uc": True, "test": True, "headless": False}
-    if use_proxy: sb_kwargs["proxy"] = "http://127.0.0.1:8080"
+    if use_proxy:
+        proxy_str = "http://127.0.0.1:8080"
+        print(f"🔗 已挂载代理: {proxy_str}")
+        sb_kwargs["proxy"] = proxy_str
 
-    for email, password in pairs:
-        email, password = email.strip(), password.strip()
-        # 每个账号使用独立的浏览器实例，彻底隔离环境
-        with SB(**sb_kwargs) as sb:
-            if login(sb, email, password):
-                renew(sb, email)
-            else:
-                print(f"❌ {email} 登录失败")
-                send_tg_message("❌", "登录失败", "N/A", email)
+    # 4. 循环执行每个账号
+    for index, (email, password) in enumerate(pairs, start=1):
+        email = email.strip()
+        password = password.strip()
         
-        print(f"🏁 账号 {email} 处理完毕，冷却 15 秒...")
-        time.sleep(15)
+        print(f"\n▶️ [{index}/{len(pairs)}] 开始处理账号: {email}")
+        
+        # 【关键：环境隔离】每个账号使用独立的浏览器实例
+        with SB(**sb_kwargs) as sb:
+            try:
+                # 尝试登录
+                if login(sb, email, password):
+                    # 登录成功后执行续期
+                    renew(sb, email)
+                    print(f"✅ 账号 {email} 流程执行完毕")
+                else:
+                    print(f"❌ 账号 {email} 登录环节失败")
+                    send_tg_message("❌", "登录失败", "N/A", email)
+            except Exception as e:
+                print(f"💥 运行账号 {email} 时出现未捕获异常: {e}")
+                sb.save_screenshot(f"crash_{email}.png")
+                send_tg_message("💥", "运行崩溃", "未知", email)
+        
+        # 5. 账号间冷却，避免 IP 被风控
+        if index < len(pairs):
+            print(f"🏁 冷却 15 秒，准备切换下一个账号...")
+            time.sleep(15)
+
+    print("\n" + "=" * 50)
+    print("🎉 所有账号处理任务已全部结束！")
+    print("=" * 50)
 
 if __name__ == "__main__":
     main()
-
-    
-
-        
-

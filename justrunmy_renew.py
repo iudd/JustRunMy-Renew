@@ -96,8 +96,9 @@ def login(sb, email, password):
 def renew(sb, email):
     global DYNAMIC_APP_NAME
     sb.open("https://justrunmy.app/panel")
+    time.sleep(5)
     try:
-        sb.wait_for_element('h3.font-semibold', timeout=10)
+        sb.wait_for_element('h3.font-semibold', timeout=30)
         DYNAMIC_APP_NAME = sb.get_text('h3.font-semibold')
         sb.click('h3.font-semibold')
         time.sleep(2)

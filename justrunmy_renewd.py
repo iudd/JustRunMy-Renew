@@ -176,12 +176,12 @@ def handle_turnstile(sb) -> bool:
             if sb.execute_script(_SOLVED_JS): return True
     return False
     def login(sb) -> bool:
-    print(f"🌐 打开登录页面: {LOGIN_URL}")
-    sb.uc_open_with_reconnect(LOGIN_URL, reconnect_time=5)
-    time.sleep(4)
+        print(f"🌐 打开登录页面: {LOGIN_URL}")
+        sb.uc_open_with_reconnect(LOGIN_URL, reconnect_time=5)
+        time.sleep(4)
 
-    try: sb.wait_for_element('input[name="Email"]', timeout=15)
-    except Exception:
+        try: sb.wait_for_element('input[name="Email"]', timeout=15)
+        except Exception:
         sb.save_screenshot("login_load_fail.png")
         return False
 

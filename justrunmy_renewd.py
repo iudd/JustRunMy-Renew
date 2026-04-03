@@ -211,6 +211,57 @@ def login(sb) -> bool:
     if sb.get_current_url().split('?')[0].lower() != LOGIN_URL.lower(): return True
     sb.save_screenshot("login_failed.png")
     return False
+
+# 👇 必须顶格！前面0个空格！
+def renew(sb) -> bool:
+    global DYNAMIC_APP_NAME
+    sb.open("https://justrunmy.app/panel")
+    time.sleep(3)
+    try:
+        sb.wait_for_element('h3.font-semibold', timeout=10)
+        DYNAMIC_APP_NAME = sb.get_text('h3.font-semibold')
+        sb.click('h3.font-semibold')
+        time.sleep(3)
+    except Exception:
+        sb.save_screenshot("renew_app_not_found.png")
+        send_tg_message("❌", "续期失败(找不到应用)", "未知")
+        return False
+
+    try:
+        sb.click('button.bg-amber-500.rounded-lg')
+        time.sleep(3)
+    except Exception:
+        sb.save_screenshot("renew_reset_btn_not_found.png")
+        send_tg_message("❌", "续期失败(找不到按钮)", "未知")
+        return False
+
+    if sb.execute_script(_EXISTS_JS):
+        if not handle_turnstile(sb):
+            sb.save_screenshot("renew_turnstile_fail.png")
+            send_tg_message("❌", "续期失败(人机验证未过)", "未知")
+            return False
+
+    try:
+        sb.click('button:contains("Just Reset")')
+        time.sleep(5) 
+    except Exception:
+        sb.save_screenshot("renew_just_reset_not_found.png")
+        send_tg_message("❌", "续期失败(无法确认)", "未知")
+        return False
+
+    try:
+        sb.refresh()
+        time.sleep(4)
+        timer_text = sb.get_text('span.font-mono.text-xl')
+        if "2 days 23" in timer_text or "3 days" in timer_text:
+            send_tg_message("✅", "续期完成", timer_text)
+            return True
+        else:
+            send_tg_message("⚠️", "续期异常(请检查)", timer_text)
+            return True 
+    except Exception:
+        send_tg_message("⚠️", "读取剩余时间失败", "未知")
+        return False
 def main():
     global EMAIL, PASSWORD
     

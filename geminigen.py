@@ -249,7 +249,7 @@ def handle_turnstile(sb) -> bool:
 # ============================================================
 def login(sb) -> bool:
     print(f"🌐 打开登录页面: {LOGIN_URL}")
-    sb.uc_open_with_reconnect(LOGIN_URL, reconnect_time=5)
+    sb.open(LOGIN_URL)
     time.sleep(4)
     # sb.save_screenshot("geminigen_01_page_loaded.png")
     # print("📸 截图: 页面加载完成")

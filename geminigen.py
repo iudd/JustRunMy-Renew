@@ -512,15 +512,12 @@ def main():
     print("   GeminiGen 自动登录脚本 (Renew Mode)")
     print("=" * 50)
     
-    # Github Action 无头环境专用参数
+    # Github Action 无头环境专用参数 兼容所有 SeleniumBase 版本
     sb_kwargs = {
         "uc": False,
-        "headless": "new",
-        "sandbox": False,
-        "disable_gpu": True,
-        "window_size": "1280,720",
-        "disable_images": True,
-        "incognito": True
+        "headless": True,
+        "browser": "chrome",
+        "chromium_arg": ["--no-sandbox", "--disable-gpu", "--window-size=1280,720", "--disable-dev-shm-usage"]
     }
     print("🔧 使用 Github Action 无头环境配置")
     with SB(**sb_kwargs) as sb:

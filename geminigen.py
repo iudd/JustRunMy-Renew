@@ -120,50 +120,6 @@ def js_fill_input(sb, selector: str, text: str):
     }})()
     """)
 
-def _activate_window():
-    for cls in ["chrome", "chromium", "Chromium", "Chrome", "google-chrome"]:
-        try:
-            r = subprocess.run(["xdotool", "search", "--onlyvisible", "--class", cls], capture_output=True, text=True, timeout=3)
-            wids = [w for w in r.stdout.strip().split("\n") if w.strip()]
-            if wids:
-                subprocess.run(["xdotool", "windowactivate", "--sync", wids[0]], timeout=3, stderr=subprocess.DEVNULL)
-                time.sleep(0.2)
-                return
-        except Exception:
-            pass
-    try:
-        subprocess.run(["xdotool", "getactivewindow", "windowactivate"], timeout=3, stderr=subprocess.DEVNULL)
-    except Exception:
-        pass
-
-def _xdotool_click(x: int, y: int):
-    _activate_window()
-    try:
-        subprocess.run(["xdotool", "mousemove", "--sync", str(x), str(y)], timeout=3, stderr=subprocess.DEVNULL)
-        time.sleep(0.15)
-        subprocess.run(["xdotool", "click", "1"], timeout=2, stderr=subprocess.DEVNULL)
-    except Exception:
-        os.system(f"xdotool mousemove {x} {y} click 1 2>/dev/null")
-
-def _click_turnstile(sb):
-    try:
-        coords = sb.execute_script(_COORDS_JS)
-    except Exception as e:
-        print(f"  ⚠️ 获取 Turnstile 坐标失败: {e}")
-        return
-    if not coords:
-        print("  ⚠️ 无法定位 Turnstile 坐标")
-        return
-    try:
-        wi = sb.execute_script(_WININFO_JS)
-    except Exception:
-        wi = {"sx": 0, "sy": 0, "oh": 800, "ih": 768}
-        
-    bar = wi["oh"] - wi["ih"]
-    ax  = coords["cx"] + wi["sx"]
-    ay  = coords["cy"] + wi["sy"] + bar
-    print(f"  🖱️ 物理级点击 Turnstile ({ax}, {ay}) bar={bar}")
-    _xdotool_click(ax, ay)
 
 def handle_turnstile(sb) -> bool:
     print("🔍 处理 Cloudflare Turnstile 验证...")
@@ -273,9 +229,6 @@ def handle_turnstile(sb) -> bool:
             except Exception:
                 pass
         
-        # 方式D: 用 xdotool 物理点击（旧方式）
-        if not clicked:
-            _click_turnstile(sb)
         
         # 等待验证通过
         for _ in range(10):
@@ -298,14 +251,14 @@ def login(sb) -> bool:
     print(f"🌐 打开登录页面: {LOGIN_URL}")
     sb.uc_open_with_reconnect(LOGIN_URL, reconnect_time=5)
     time.sleep(4)
-    sb.save_screenshot("geminigen_01_page_loaded.png")
-    print("📸 截图: 页面加载完成")
+    # sb.save_screenshot("geminigen_01_page_loaded.png")
+    # print("📸 截图: 页面加载完成")
 
     try:
         sb.wait_for_element('input[name="username"]', timeout=20)
     except Exception:
         print("❌ 页面未加载出登录表单")
-        sb.save_screenshot("geminigen_login_load_fail.png")
+        # sb.save_screenshot("geminigen_login_load_fail.png")
         return False
 
     # 调试：打印页面上所有 iframe 和 turnstile 相关元素
@@ -354,7 +307,7 @@ def login(sb) -> bool:
     
     print("🔑 填写密码...")
     js_fill_input(sb, 'input[name="password"]', PASSWORD)
-    time.sleep(1)
+    time.sleep(1.5)
 
     # 检查 Turnstile：即使 input 存在也需要等 iframe 加载
     print("🛡️ 检查 Turnstile 验证...")
@@ -362,7 +315,7 @@ def login(sb) -> bool:
     # 等待 Turnstile iframe 加载，最多等 15 秒
     iframe_loaded = False
     for wait_i in range(15):
-        time.sleep(1)
+        time.sleep(1.5)
         try:
             iframe_count = sb.execute_script('''
                 return document.querySelectorAll('iframe').length;
@@ -408,14 +361,14 @@ def login(sb) -> bool:
         except Exception:
             pass
     
-    sb.save_screenshot("geminigen_02_before_turnstile.png")
-    print("📸 截图: 过盾前")
+    # sb.save_screenshot("geminigen_02_before_turnstile.png")
+    # print("📸 截图: 过盾前")
     
     if has_turnstile:
         print("🛡️ 检测到 Turnstile，开始处理...")
         if not handle_turnstile(sb):
             print("❌ 登录界面的 Turnstile 验证失败")
-            sb.save_screenshot("geminigen_login_turnstile_fail.png")
+            # sb.save_screenshot("geminigen_login_turnstile_fail.png")
             return False
     else:
         print("ℹ️ 未检测到 Turnstile")
@@ -424,8 +377,8 @@ def login(sb) -> bool:
     sb.press_keys('input[name="password"]', '\n')
 
     print("⏳ 等待登录跳转...")
-    for _ in range(12):
-        time.sleep(1)
+    for _ in range(20):
+        time.sleep(1.5)
         if sb.get_current_url().split('?')[0].lower() != LOGIN_URL.lower():
             break
 
@@ -440,12 +393,12 @@ def login(sb) -> bool:
             if sb.is_element_visible('button:contains("不再显示")'):
                 print("🖱️ 点击【不再显示】关闭弹窗")
                 sb.click('button:contains("不再显示")')
-                time.sleep(1)
+                time.sleep(1.5)
             elif sb.is_element_visible('span.i-heroicons\\:x-mark-20-solid'):
                 # 备用：点击 X 关闭按钮
                 print("🖱️ 点击【X】关闭弹窗")
                 sb.click('span.i-heroicons\\:x-mark-20-solid')
-                time.sleep(1)
+                time.sleep(1.5)
             else:
                 print("ℹ️ 未检测到弹窗，进入主流程")
         except Exception as e:
@@ -454,7 +407,7 @@ def login(sb) -> bool:
         return True
         
     print("❌ 登录失败，页面没有跳转。")
-    sb.save_screenshot("geminigen_login_failed.png")
+    # sb.save_screenshot("geminigen_login_failed.png")
     return False
 
 # ============================================================
@@ -464,14 +417,14 @@ def login_normal(sb) -> bool:
     print(f"🌐 打开登录页面: {LOGIN_URL}")
     sb.open(LOGIN_URL)
     time.sleep(4)
-    sb.save_screenshot("geminigen_01_page_loaded.png")
-    print("📸 截图: 页面加载完成")
+    # sb.save_screenshot("geminigen_01_page_loaded.png")
+    # print("📸 截图: 页面加载完成")
 
     try:
         sb.wait_for_element('input[name="username"]', timeout=20)
     except Exception:
         print("❌ 页面未加载出登录表单")
-        sb.save_screenshot("geminigen_login_load_fail.png")
+        # sb.save_screenshot("geminigen_login_load_fail.png")
         return False
 
     # 调试 iframe
@@ -495,13 +448,13 @@ def login_normal(sb) -> bool:
     
     print("🔑 填写密码...")
     js_fill_input(sb, 'input[name="password"]', PASSWORD)
-    time.sleep(1)
+    time.sleep(1.5)
 
     # 等待 Turnstile iframe 加载
     print("🛡️ 等待 Turnstile 加载...")
     iframe_loaded = False
     for wait_i in range(15):
-        time.sleep(1)
+        time.sleep(1.5)
         try:
             iframe_count = sb.execute_script('return document.querySelectorAll("iframe").length;')
             if iframe_count > 0:
@@ -521,14 +474,14 @@ def login_normal(sb) -> bool:
     except Exception:
         pass
     
-    sb.save_screenshot("geminigen_02_before_turnstile.png")
-    print("📸 截图: 过盾前")
+    # sb.save_screenshot("geminigen_02_before_turnstile.png")
+    # print("📸 截图: 过盾前")
     
     if has_turnstile:
         print("🛡️ 检测到 Turnstile，开始处理...")
         if not handle_turnstile(sb):
             print("❌ 登录界面的 Turnstile 验证失败")
-            sb.save_screenshot("geminigen_login_turnstile_fail.png")
+            # sb.save_screenshot("geminigen_login_turnstile_fail.png")
             return False
     else:
         print("ℹ️ 未检测到 Turnstile")
@@ -537,8 +490,8 @@ def login_normal(sb) -> bool:
     sb.press_keys('input[name="password"]', '\n')
 
     print("⏳ 等待登录跳转...")
-    for _ in range(12):
-        time.sleep(1)
+    for _ in range(20):
+        time.sleep(1.5)
         if sb.get_current_url().split('?')[0].lower() != LOGIN_URL.lower():
             break
 
@@ -548,7 +501,7 @@ def login_normal(sb) -> bool:
         return True
         
     print("❌ 登录失败，页面没有跳转。")
-    sb.save_screenshot("geminigen_login_failed.png")
+    # sb.save_screenshot("geminigen_login_failed.png")
     return False
 
 # ============================================================
@@ -559,16 +512,23 @@ def main():
     print("   GeminiGen 自动登录脚本 (Renew Mode)")
     print("=" * 50)
     
-    # uc 模式下 Turnstile iframe 无法加载，改用普通 Chrome + headless2
-    # uc 模式 + 代理，不用 xvfb（由系统虚拟显示处理）
-    sb_kwargs = {"uc": True, "test": True, "headless": False, "proxy": "http://127.0.0.1:7890"}
-    print("🔗 使用代理: http://127.0.0.1:7890")
+    # Github Action 无头环境专用参数
+    sb_kwargs = {
+        "uc": False,
+        "headless": "new",
+        "no_sandbox": True,
+        "disable_gpu": True,
+        "window_size": "1280,720",
+        "disable_images": True,
+        "incognito": True
+    }
+    print("🔧 使用 Github Action 无头环境配置")
     with SB(**sb_kwargs) as sb:
         print("✅ 浏览器已启动")
         if login(sb):
             print("🎉 登录完成，保存截图...")
             time.sleep(2)
-            sb.save_screenshot("geminigen_login_success.png")
+            # sb.save_screenshot("geminigen_login_success.png")
             print("📸 截图已保存: geminigen_login_success.png")
         else:
             print("\n❌ 登录测试失败。")

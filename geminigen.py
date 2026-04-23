@@ -516,7 +516,7 @@ def main():
     sb_kwargs = {
         "uc": False,
         "headless": "new",
-        "no_sandbox": True,
+        "sandbox": False,
         "disable_gpu": True,
         "window_size": "1280,720",
         "disable_images": True,
